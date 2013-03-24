@@ -1,0 +1,24 @@
+{
+  "name": "generator-stream",
+  "version": "0.0.0",
+  "description": "function as a stream source",
+  "main": "index.js",
+  "scripts": {
+    "test": "./node_modules/.bin/mocha",
+    "dev": "./node_modules/.bin/mocha -w"
+  },
+  "engines": {
+    "node": ">= 0.10.0"
+  },
+  "devDependencies" :{
+    "chai": "1.5.0",
+    "mocha": "1.8.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:ando-takahiro/generator-stream.git"
+  },
+  "author": "Takahiro Ando",
+  "license": "BSD",
+  "readmeFilename": "README.md"
+}
