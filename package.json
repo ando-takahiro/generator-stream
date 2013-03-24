@@ -1,6 +1,6 @@
 {
   "name": "generator-stream",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "function as a stream source",
   "main": "index.js",
   "scripts": {

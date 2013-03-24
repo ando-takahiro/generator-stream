@@ -5,54 +5,40 @@ var stream = require('stream'),
 
 exports.create = create;
 
-function create(options) {
-  options = options || {};
-
-  var stream = new Readable(options),
-      count = options.count || 100,
-      generator = options.generator || mod256,
-      busy = false,
-      current = 0;
-
-  // default generator
-  function mod256() {
-    var buf = new Buffer(1);
-    buf.writeUInt8((current - 1) % 256, 0);
-    return buf;
-  }
+function create(generator) {
+  var stream = new Readable(),
+      ready = true;
 
   if (generator.length === 0) {
     generator = wrapper0(generator);
   }
 
   function preboundGenerator() {
+    ready = false;
     generator(function(err, data) {
-      busy = false;
+      ready = true;
 
       if (err) {
         stream.emit('error', err);
       } else {
-        if (stream.push(data)) {
-          if (current < count) {
+        if (data) {
+          if (stream.push(data)) {
             // if push() returns false, then we need to stop reading from source
             process.nextTick(fetch);
-          } else {
-            // finished
-            stream.push(null);
           }
+        } else {
+          // finished
+          ready = false;
+          stream.push(null);
         }
       }
     });
   }
 
   function fetch() {
-    if (busy || current >= count) {
-      return;
+    if (ready) {
+      preboundGenerator();
     }
-
-    busy = true;
-    ++current;
-    preboundGenerator();
   }
 
   // _read will be called when the stream wants to pull more data in

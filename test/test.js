@@ -7,24 +7,29 @@ var createGeneratorStream = require('../').create,
     expect = require('chai').expect;
 
 describe('createGeneratorStream', function() {
+  var COUNT = 100;
+
   function defaultExpected(pos) {
     return pos % 256;
   }
 
-  function check(options, done) {
-    var stream = createGeneratorStream(options);
+  function check(generator, done) {
+    var cur = 0;
 
-    // put default {} after createGeneratorStream to check whether it works even if options is undefined or not.
-    options = options || {};
-    var COUNT = options.count || 100,
+    generator = generator || function() {
+      var buffer = new Buffer(1);
+      buffer.writeUInt8(cur++ % 256);
+      return buffer;
+    };
+
+    var stream = createGeneratorStream(generator),
         checker = new Writable(),
-        expected = options.expected || defaultExpected,
         offset = 0;
 
     checker._write = function(chunk, encoding, callback) {
       expect(offset).to.be.lessThan(COUNT);
       for (var i = 0; i < chunk.length; ++i) {
-        expect(chunk.readUInt8(i)).to.equal(expected(offset + i));
+        expect(chunk.readUInt8(i)).to.equal((offset + i) % 256);
       }
       offset += chunk.length;
       if (offset >= COUNT) {
@@ -37,40 +42,30 @@ describe('createGeneratorStream', function() {
     stream.pipe(checker);
   }
 
-  it('generates random [0...99] stream default', function(done) {
-    check(undefined, done);
-  });
-
-  it('repeats to call generator following "count" in the option', function(done) {
-    check({count: 1024}, done);
-  });
-
-  it('takes user defined generator from "generator" in the option', function(done) {
+  it('takes async generator', function(done) {
     var count = 0;
 
-    check({
-      generator: function(done) {
+    check(function(done) {
+      if (count < COUNT) {
         var buf = new Buffer(1);
-        buf.writeUInt8((++count) % 256, 0);
+        buf.writeUInt8(count++ % 256, 0);
         process.nextTick(done.bind(null, null, buf));
-      },
-      expected: function(pos) {
-        return (pos + 1) % 256;
+      } else {
+        done(null, null);
       }
     }, done);
   });
 
-  it('sync "generator" just retuns buffer', function(done) {
+  it('sync "generator" just retuns buffer and return null when finished', function(done) {
     var count = 0;
 
-    check({
-      generator: function() { // no need 'done' argument
+    check(function() { // no need 'done' argument
+      if (count < COUNT) {
         var buf = new Buffer(1);
-        buf.writeUInt8((++count) % 256, 0);
+        buf.writeUInt8(count++ % 256, 0);
         return buf;
-      },
-      expected: function(pos) {
-        return (pos + 1) % 256;
+      } else {
+        return null;
       }
     }, done);
   });
@@ -80,11 +75,9 @@ describe('README', function() {
   it('example works', function(done) {
     var createGeneratorStream = require('../').create,
         count = 0,
-        generator = createGeneratorStream({
-          count: 3, // you can set repeat count(default: 100)
-          generator: function() {
-            return new Buffer('hello world:' + (++count));
-          }
+        generator = createGeneratorStream(function() {
+          // return buffer. and then return null when finished.
+          return count < 3 ? new Buffer('hello world:' + (count++)) : null;
         }),
         fs = require('fs'),
         out = fs.createWriteStream('out.txt');
@@ -93,7 +86,7 @@ describe('README', function() {
     generator.pipe(out);
 
     out.on('close', function() {
-      expect(require('fs').readFileSync('out.txt', 'utf8')).to.equal('hello world:1hello world:2hello world:3');
+      expect(fs.readFileSync('out.txt', 'utf8')).to.equal('hello world:0hello world:1hello world:2');
       done();
     });
   });
