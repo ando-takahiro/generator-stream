@@ -1,4 +1,4 @@
-This module would be covvenient when you write test for your original stream.  You don't need a file to provide a big data for your test.
+This module would be convenient when you write test for your original stream.  You don't need a file to provide a big data for your test.
 
 How to use
 ===
