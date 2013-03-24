@@ -3,7 +3,13 @@ This module would be convenient when you write test for your original stream.  Y
 How to use
 ===
 
-    var createGeneratorStream = require('../').create,
+install with
+
+    npm install generator-stream
+
+then
+
+    var createGeneratorStream = require('generator-stream').create,
         count = 0,
         generator = createGeneratorStream(function() {
           // return buffer. and then return null when finished.
